@@ -21,7 +21,10 @@
 '       - The macro checks if the source file exists in the specified source folder.
 '       - If the file exists, it ensures that the destination folder exists (and
 '         creates it if necessary), then copies the file to the destination folder.
-'       - If the file does not exist, a message box notifies the user.
+'       - A counter is incremented for each successful copy.
+'       - If the file does not exist, a message box notifies the user immediately.
+' 5. After processing all rows, a summary message box confirms how many files were
+'    copied successfully.
 '
 ' Usage:
 ' - Customize the file naming convention or add extensions as needed.
@@ -46,6 +49,10 @@ Sub MoveFilestoSFTP()
     Dim sourceFilePath As String
     Dim destFilePath As String
     Dim moveFlag As String
+    Dim filesCopied As Long
+    
+    ' Initialize the counter for copied files
+    filesCopied = 0
     
     ' Read the source folder path from MasterSheet cell B6
     sourceFolder = ThisWorkbook.Worksheets("MasterSheet").Range("B6").Value
@@ -92,9 +99,17 @@ Sub MoveFilestoSFTP()
                 
                 ' Copy the file from the source folder to the destination folder
                 FileCopy sourceFilePath, destFilePath
+                filesCopied = filesCopied + 1
             Else
-                MsgBox "File " & sourceFilePath & " not found."
+                MsgBox "File " & sourceFilePath & " not found.", vbExclamation, "File Not Found"
             End If
         End If
     Next i
+    
+    ' Show a confirmation message after processing all files
+    If filesCopied > 0 Then
+        MsgBox filesCopied & " file(s) copied successfully.", vbInformation, "Copy Successful"
+    Else
+        MsgBox "No files were copied.", vbInformation, "Copy Result"
+    End If
 End Sub
