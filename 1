@@ -1,0 +1,64 @@
+Sub MoveFilesWithDateConditional()
+    Dim sourceFolder As String
+    Dim destFolder As String
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim clientName As String
+    Dim moveDate As String
+    Dim fileName As String
+    Dim sourceFilePath As String
+    Dim destFilePath As String
+    Dim moveFlag As String
+    
+    ' Read the source folder path from MasterSheet cell B6
+    sourceFolder = ThisWorkbook.Worksheets("MasterSheet").Range("B6").Value
+    ' Ensure the folder path ends with a backslash
+    If Right(sourceFolder, 1) <> "\" Then
+        sourceFolder = sourceFolder & "\"
+    End If
+    
+    ' Get the date from MasterSheet cell B2 and format it as yyyymmdd
+    moveDate = Format(ThisWorkbook.Worksheets("MasterSheet").Range("B2").Value, "yyyymmdd")
+    
+    ' Set the SFTP worksheet and find the last row in column A
+    Set ws = ThisWorkbook.Worksheets("SFTP")
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Loop through each client in the SFTP list (assuming row 1 is headers)
+    For i = 2 To lastRow
+        ' Check if column C is set to YES (case-insensitive)
+        moveFlag = UCase(Trim(ws.Cells(i, "C").Value))
+        If moveFlag = "YES" Then
+            ' Read client name from column A
+            clientName = ws.Cells(i, "A").Value
+            ' Build the file name using the formatted date, an underscore, then the client name.
+            ' Example file name: "20250310_ClientA"
+            fileName = moveDate & "_" & clientName
+            
+            ' Read the destination folder path from column B
+            destFolder = ws.Cells(i, "B").Value
+            ' Ensure the destination folder path ends with a backslash
+            If Right(destFolder, 1) <> "\" Then
+                destFolder = destFolder & "\"
+            End If
+            
+            ' Build full file paths for source and destination
+            sourceFilePath = sourceFolder & fileName
+            destFilePath = destFolder & fileName
+            
+            ' Check if the source file exists before attempting to move
+            If Dir(sourceFilePath) <> "" Then
+                ' Check if the destination folder exists; if not, create it
+                If Dir(destFolder, vbDirectory) = "" Then
+                    MkDir destFolder
+                End If
+                
+                ' Move the file from the source folder to the destination folder
+                Name sourceFilePath As destFilePath
+            Else
+                MsgBox "File " & sourceFilePath & " not found."
+            End If
+        End If
+    Next i
+End Sub
