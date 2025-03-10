@@ -1,4 +1,40 @@
-Sub MoveFilesWithDateConditional()
+'***************************************************************
+' Macro: CopyFilesWithDateConditional
+'
+' Description:
+' This macro automates the process of copying Excel files (ending with .xlsx)
+' from a source folder to one or more destination folders based on information
+' provided on two worksheets: "MasterSheet" and "SFTP".
+'
+' How It Works:
+' 1. It reads the source folder path from cell B6 on the "MasterSheet".
+' 2. It reads a date from cell B2 on the "MasterSheet" and formats it as yyyymmdd.
+' 3. It then loops through each row in the "SFTP" worksheet (starting at row 2,
+'    assuming row 1 contains headers). For each row:
+'       - Column A contains the client name.
+'       - Column B contains the destination folder path.
+'       - Column C is used as a flag ("YES" or "NO") to determine whether to
+'         process that row.
+' 4. For rows with "YES" in column C:
+'       - The file name is constructed using the formatted date, an underscore,
+'         then the client name, and finally ".xlsx" (e.g., "20250310_ClientA.xlsx").
+'       - The macro checks if the source file exists in the specified source folder.
+'       - If the file exists, it ensures that the destination folder exists (and
+'         creates it if necessary), then copies the file to the destination folder.
+'       - If the file does not exist, a message box notifies the user.
+'
+' Usage:
+' - Customize the file naming convention or add extensions as needed.
+' - Ensure that the folder paths in "MasterSheet" and "SFTP" are correct.
+'
+' Note:
+' - This macro uses the VBA FileCopy statement to copy files. This means that 
+'   the file in the source folder remains unchanged, and a duplicate is created 
+'   in the destination folder.
+' - The macro is case-insensitive for the "YES"/"NO" flag.
+'***************************************************************
+
+Sub CopyFilesWithDateConditional()
     Dim sourceFolder As String
     Dim destFolder As String
     Dim ws As Worksheet
@@ -32,9 +68,9 @@ Sub MoveFilesWithDateConditional()
         If moveFlag = "YES" Then
             ' Read client name from column A
             clientName = ws.Cells(i, "A").Value
-            ' Build the file name using the formatted date, an underscore, then the client name.
-            ' Example file name: "20250310_ClientA"
-            fileName = moveDate & "_" & clientName
+            ' Build the file name: Date then an underscore then the client name, ending with .xlsx.
+            ' Example file name: "20250310_ClientA.xlsx"
+            fileName = moveDate & "_" & clientName & ".xlsx"
             
             ' Read the destination folder path from column B
             destFolder = ws.Cells(i, "B").Value
@@ -47,15 +83,15 @@ Sub MoveFilesWithDateConditional()
             sourceFilePath = sourceFolder & fileName
             destFilePath = destFolder & fileName
             
-            ' Check if the source file exists before attempting to move
+            ' Check if the source file exists before attempting to copy
             If Dir(sourceFilePath) <> "" Then
                 ' Check if the destination folder exists; if not, create it
                 If Dir(destFolder, vbDirectory) = "" Then
                     MkDir destFolder
                 End If
                 
-                ' Move the file from the source folder to the destination folder
-                Name sourceFilePath As destFilePath
+                ' Copy the file from the source folder to the destination folder
+                FileCopy sourceFilePath, destFilePath
             Else
                 MsgBox "File " & sourceFilePath & " not found."
             End If
