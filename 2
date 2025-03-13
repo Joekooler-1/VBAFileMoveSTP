@@ -1,3 +1,35 @@
+'********************************************************************************************
+' Description:
+'   This macro reads configuration data from a sheet named "SFTP". The "SFTP" sheet should
+'   have headers in row 1 with the following columns:
+'       A: Client Name
+'       B: Data Sheet Name
+'       C: New File Name (without extension)
+'       D: File Path (where the CSV file will be saved)
+'
+'   For each row in the SFTP sheet (starting from row 2), the macro performs the following:
+'       1. Reads the client name, data sheet name, new file name, and file path.
+'       2. Opens the specified data sheet and assumes its header is in row 1.
+'       3. Finds the column positions for the following headers in the data sheet:
+'          "Client", "Cusip_ISIN", "Security_Name", "Valuation_Type", and "Price".
+'       4. Loops through the data sheet rows (starting from row 2) and selects only the rows
+'          where the "Client" column matches the client name from the SFTP sheet.
+'       5. Copies the matching rows (only the specified columns) into a new workbook.
+'       6. Saves the new workbook as a CSV file using the provided file path and new file name.
+'
+'   This macro is useful for filtering and exporting data for individual clients based on a
+'   configuration provided on the "SFTP" sheet.
+'
+' How It Works:
+'   - The macro defines the SFTP sheet and determines its used range.
+'   - It loops through each configuration row (ignoring the header) to retrieve export settings.
+'   - For each configuration, it accesses the corresponding data sheet and identifies required 
+'     columns by matching header names.
+'   - It then filters the data sheet by the specified client and copies the desired columns to
+'     a new workbook.
+'   - Finally, it saves the new workbook as a CSV file and repeats the process for all configuration rows.
+'********************************************************************************************
+
 Sub ExportFilteredDataToCSV()
     Dim wsSFTP As Worksheet
     Dim rngSFTP As Range
