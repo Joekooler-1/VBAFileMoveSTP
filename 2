@@ -1,0 +1,113 @@
+Sub ExportFilteredDataToCSV()
+    Dim wsSFTP As Worksheet
+    Dim rngSFTP As Range
+    Dim i As Long, j As Long
+    Dim clientName As String, dataSheetName As String, newFileName As String, filePath As String
+    Dim dataWs As Worksheet
+    Dim wbNew As Workbook
+    Dim fullPath As String
+    Dim headerRow As Range
+    Dim lastRow As Long, lastCol As Long
+    Dim colClient As Long, colCusip As Long, colSecurity As Long, colValuation As Long, colPrice As Long
+    Dim outputRow As Long
+    Dim sftpLastRow As Long
+
+    ' Set the SFTP sheet and define its used range
+    Set wsSFTP = ThisWorkbook.Sheets("SFTP")
+    ' Determine the last row in Column A
+    sftpLastRow = wsSFTP.Cells(wsSFTP.Rows.Count, 1).End(xlUp).Row
+    ' Assuming the used range has columns A:D (headers in row 1)
+    Set rngSFTP = wsSFTP.Range("A1:D" & sftpLastRow)
+    
+    ' Loop through each row in the SFTP used range (starting from row 2, assuming row 1 are headers)
+    For i = 2 To rngSFTP.Rows.Count
+        ' Read values from the SFTP sheet row
+        clientName = Trim(rngSFTP.Cells(i, 1).Value)
+        dataSheetName = rngSFTP.Cells(i, 2).Value
+        newFileName = rngSFTP.Cells(i, 3).Value
+        filePath = rngSFTP.Cells(i, 4).Value
+        
+        ' Attempt to set the data worksheet based on the provided name
+        On Error Resume Next
+        Set dataWs = ThisWorkbook.Sheets(dataSheetName)
+        On Error GoTo 0
+        If dataWs Is Nothing Then
+            MsgBox "Data sheet '" & dataSheetName & "' not found for client: " & clientName, vbExclamation
+        Else
+            ' Assume row 1 of the data sheet contains headers
+            Set headerRow = dataWs.Rows(1)
+            lastCol = dataWs.Cells(1, dataWs.Columns.Count).End(xlToLeft).Column
+            
+            ' Initialize column indices
+            colClient = 0: colCusip = 0: colSecurity = 0: colValuation = 0: colPrice = 0
+            
+            ' Find the columns by header name (case-sensitive)
+            For j = 1 To lastCol
+                Select Case Trim(headerRow.Cells(1, j).Value)
+                    Case "Client"
+                        colClient = j
+                    Case "Cusip_ISIN"
+                        colCusip = j
+                    Case "Security_Name"
+                        colSecurity = j
+                    Case "Valuation_Type"
+                        colValuation = j
+                    Case "Price"
+                        colPrice = j
+                End Select
+            Next j
+            
+            ' Ensure all required columns were found
+            If colClient = 0 Or colCusip = 0 Or colSecurity = 0 Or colValuation = 0 Or colPrice = 0 Then
+                MsgBox "One or more required columns (Client, Cusip_ISIN, Security_Name, Valuation_Type, Price) not found in sheet '" & dataSheetName & "'.", vbExclamation
+            Else
+                ' Create a new workbook for exporting data
+                Set wbNew = Workbooks.Add
+                
+                ' Write header row in the new workbook in the same order as required columns
+                With wbNew.Sheets(1)
+                    .Cells(1, 1).Value = "Client"
+                    .Cells(1, 2).Value = "Cusip_ISIN"
+                    .Cells(1, 3).Value = "Security_Name"
+                    .Cells(1, 4).Value = "Valuation_Type"
+                    .Cells(1, 5).Value = "Price"
+                End With
+                
+                outputRow = 2 ' Start writing from row 2 in the new workbook
+                
+                ' Determine the last used row in the data sheet based on the Client column
+                lastRow = dataWs.Cells(dataWs.Rows.Count, colClient).End(xlUp).Row
+                
+                ' Loop through the data sheet rows (starting from row 2, assuming headers are in row 1)
+                For j = 2 To lastRow
+                    If Trim(dataWs.Cells(j, colClient).Value) = clientName Then
+                        With wbNew.Sheets(1)
+                            .Cells(outputRow, 1).Value = dataWs.Cells(j, colClient).Value
+                            .Cells(outputRow, 2).Value = dataWs.Cells(j, colCusip).Value
+                            .Cells(outputRow, 3).Value = dataWs.Cells(j, colSecurity).Value
+                            .Cells(outputRow, 4).Value = dataWs.Cells(j, colValuation).Value
+                            .Cells(outputRow, 5).Value = dataWs.Cells(j, colPrice).Value
+                        End With
+                        outputRow = outputRow + 1
+                    End If
+                Next j
+                
+                ' Build the full file path (ensure the filePath ends with a backslash if needed)
+                fullPath = filePath & newFileName & ".csv"
+                
+                ' Save the new workbook as a CSV file
+                Application.DisplayAlerts = False
+                wbNew.SaveAs Filename:=fullPath, FileFormat:=xlCSV, CreateBackup:=False
+                Application.DisplayAlerts = True
+                
+                ' Close the new workbook without further changes
+                wbNew.Close SaveChanges:=False
+            End If
+        End If
+        
+        ' Reset the data worksheet reference for the next iteration
+        Set dataWs = Nothing
+    Next i
+    
+    MsgBox "Export complete!", vbInformation
+End Sub
